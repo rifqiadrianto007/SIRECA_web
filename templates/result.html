@@ -1,26 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hasil Smoothing</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <title>SIRECA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col items-center justify-center">
-    <h1 class="text-2xl font-bold mb-6 text-gray-700">Hasil Smoothing</h1>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-6">
+  <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-4xl">
+    <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">✨ Hasil Smoothing (Level {{ level }})</h2>
 
-    <div class="flex gap-8">
-        <div class="text-center">
-            <h2 class="text-lg font-semibold mb-2">Sebelum</h2>
-            <img src="{{ url_for('static', path='uploads/' + original_filename) }}" class="w-80 rounded-lg shadow-md">
-        </div>
-
-        <div class="text-center">
-            <h2 class="text-lg font-semibold mb-2">Setelah</h2>
-            <img src="{{ url_for('static', path='uploads/' + result_filename) }}" class="w-80 rounded-lg shadow-md">
-        </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="text-center">
+        <p class="font-semibold text-gray-700 mb-2">Before</p>
+        <img src="{{ before_path }}" alt="Before" class="rounded-lg shadow">
+      </div>
+      <div class="text-center">
+        <p class="font-semibold text-gray-700 mb-2">After</p>
+        <img src="{{ after_path }}" alt="After" class="rounded-lg shadow">
+      </div>
     </div>
 
-    <a href="/" class="mt-6 bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition">Kembali</a>
+    <div class="mt-8 flex justify-center space-x-4">
+      <a href="/" class="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded-lg font-medium transition">🔙 Kembali</a>
+      <a href="{{ download_path }}" download class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition">⬇️ Download Hasil</a>
+    </div>
+  </div>
 </body>
 </html>
