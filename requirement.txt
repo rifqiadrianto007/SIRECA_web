@@ -1,8 +1,8 @@
-fastapi
-uvicorn
-jinja2
-torch
-torchvision
-numpy
-opencv-python
-python-multipart
+fastapi==0.111.0
+uvicorn==0.30.0
+jinja2==3.1.4
+python-multipart==0.0.9
+opencv-python-headless==4.10.0.84
+torch==2.2.2+cpu
+torchvision==0.17.2+cpu
+--extra-index-url https://download.pytorch.org/whl/cpu
