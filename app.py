@@ -13,9 +13,6 @@ app = FastAPI()
 # Folder templates (untuk HTML)
 templates = Jinja2Templates(directory="templates")
 
-# Folder static (kalau ada asset css/js)
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
 # ROUTE UTAMA
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
