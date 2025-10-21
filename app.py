@@ -1,40 +1,51 @@
-from fastapi import FastAPI, UploadFile, Form
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
-import numpy as np
+from fastapi import FastAPI, Request, File, UploadFile, Form
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 import cv2
+import numpy as np
+import io
+from PIL import Image
+import base64
 
 app = FastAPI()
 
-# Mengizinkan akses dari browser lokal
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Folder templates (untuk HTML)
+templates = Jinja2Templates(directory="templates")
 
+# Folder static (kalau ada asset css/js)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-@app.post("/smooth")
-async def smooth_image(file: UploadFile, intensity: int = Form(5)):
-    """
-    Endpoint smoothing gambar dengan Gaussian blur
-    tanpa menyimpan file ke sistem.
-    """
-    # Baca gambar sebagai array numpy
-    contents = await file.read()
-    npimg = np.frombuffer(contents, np.uint8)
-    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+# ROUTE UTAMA
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-    # Tentukan ukuran kernel berdasarkan slider (1–20)
-    ksize = max(1, int(intensity))
-    if ksize % 2 == 0:  # kernel harus ganjil
-        ksize += 1
+# ROUTE UNTUK PROSES SMOOTHING
+@app.post("/process", response_class=HTMLResponse)
+async def process_image(
+    request: Request,
+    file: UploadFile = File(...),
+    smoothing_level: int = Form(5)
+):
+    # Baca file gambar
+    image_data = await file.read()
+    img_array = np.frombuffer(image_data, np.uint8)
+    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
-    # Proses smoothing dengan Gaussian Blur
-    smoothed = cv2.GaussianBlur(img, (ksize, ksize), 0)
+    # Proses smoothing (Gaussian blur)
+    kernel_size = max(1, (smoothing_level // 2) * 2 + 1)
+    smoothed = cv2.GaussianBlur(img, (kernel_size, kernel_size), 0)
 
-    # Encode hasil ke format JPEG (tanpa menyimpan file)
-    _, encoded_img = cv2.imencode(".jpg", smoothed)
-    return Response(content=encoded_img.tobytes(), media_type="image/jpeg")
+    # Konversi gambar sebelum & sesudah ke base64 agar bisa ditampilkan langsung di HTML
+    _, buffer_before = cv2.imencode('.png', img)
+    _, buffer_after = cv2.imencode('.png', smoothed)
+    img_base64_before = base64.b64encode(buffer_before).decode('utf-8')
+    img_base64_after = base64.b64encode(buffer_after).decode('utf-8')
+
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "image_before": img_base64_before,
+        "image_after": img_base64_after,
+        "smoothing_level": smoothing_level
+    })

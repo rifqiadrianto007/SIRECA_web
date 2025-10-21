@@ -4,145 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SIRECA</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f6f7fb;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 30px;
-    }
-
-    h1 {
-      color: #333;
-      margin-bottom: 10px;
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      padding: 20px;
-      width: 400px;
-      text-align: center;
-    }
-
-    input[type="file"] {
-      margin: 10px 0;
-    }
-
-    .slider-container {
-      margin: 15px 0;
-    }
-
-    input[type="range"] {
-      width: 100%;
-    }
-
-    button {
-      background-color: #0078ff;
-      color: white;
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 15px;
-      transition: 0.2s;
-    }
-
-    button:hover {
-      background-color: #005fcc;
-    }
-
-    img {
-      margin-top: 15px;
-      max-width: 100%;
-      border-radius: 10px;
-      border: 1px solid #ddd;
-    }
-
-    #downloadLink {
-      display: none;
-      margin-top: 10px;
-      text-decoration: none;
-      background: #00b341;
-      color: white;
-      padding: 8px 14px;
-      border-radius: 8px;
-    }
-
-    #downloadLink:hover {
-      background: #009c38;
-    }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-6">
 
-  <h1>SIRECA – Sistem Restorasi Citra untuk Penghalusan dan Penghapusan Latar Belakang Berbasis Web</h1>
-  <div class="card">
-    <input type="file" id="fileInput" accept="image/*"><br>
+  <div class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-3xl">
+    <h1 class="text-2xl font-bold text-center mb-6 text-gray-700">SIRECA – Sistem Restorasi Citra untuk Penghalusan dan Penghapusan Latar Belakang Berbasis Web</h1>
 
-    <div class="slider-container">
-      <label for="intensity">Tingkat Kehalusan :</label><br>
-      <input type="range" id="intensity" min="1" max="20" value="5" oninput="updateLabel(this.value)">
-      <span id="intensityValue">5</span>
+    <form action="/process" method="post" enctype="multipart/form-data" class="space-y-4">
+      <div>
+        <label class="block mb-2 text-gray-600 font-semibold">Pilih Gambar</label>
+        <input type="file" name="file" accept="image/*" required class="block w-full border border-gray-300 rounded-lg p-2">
+      </div>
+
+      <div>
+        <label class="block mb-2 text-gray-600 font-semibold">Tingkat Kehalusan : <span id="smoothValue">5</span></label>
+        <input type="range" min="1" max="20" value="5" id="smoothing" name="smoothing_level" class="w-full">
+      </div>
+
+      <div class="text-center">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition">Proses Gambar</button>
+      </div>
+    </form>
+
+    {% if image_before %}
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="text-center">
+        <h2 class="font-semibold text-gray-700 mb-2">Sebelum</h2>
+        <img src="data:image/png;base64,{{ image_before }}" alt="Before" class="rounded-lg shadow-md">
+      </div>
+
+      <div class="text-center">
+        <h2 class="font-semibold text-gray-700 mb-2">Setelah ({{ smoothing_level }})</h2>
+        <img id="processedImage" src="data:image/png;base64,{{ image_after }}" alt="After" class="rounded-lg shadow-md">
+      </div>
     </div>
 
-    <button id="processButton">Proses Gambar</button>
-    <a id="downloadLink">Download Hasil</a>
-    <img id="outputImage" alt="Hasil smoothing akan muncul di sini" />
+    <div class="text-center mt-6">
+      <a id="downloadBtn" href="data:image/png;base64,{{ image_after }}" download="hasil_smoothing.png"
+         class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-semibold transition">
+        Download Hasil
+      </a>
+    </div>
+    {% endif %}
   </div>
 
   <script>
-    const processButton = document.getElementById("processButton");
-    const fileInput = document.getElementById("fileInput");
-    const outputImage = document.getElementById("outputImage");
-    const downloadLink = document.getElementById("downloadLink");
-    const intensitySlider = document.getElementById("intensity");
-    const intensityValue = document.getElementById("intensityValue");
-
-    function updateLabel(value) {
-      intensityValue.textContent = value;
-    }
-
-    processButton.addEventListener("click", async () => {
-      const file = fileInput.files[0];
-      if (!file) {
-        alert("Pilih gambar terlebih dahulu!");
-        return;
-      }
-
-      const intensity = intensitySlider.value;
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("intensity", intensity);
-
-      processButton.textContent = "Memproses...";
-      processButton.disabled = true;
-
-      try {
-        const response = await fetch("http://127.0.0.1:8000/smooth", {
-          method: "POST",
-          body: formData,
-        });
-        const blob = await response.blob();
-        const imageUrl = URL.createObjectURL(blob);
-
-        outputImage.src = imageUrl;
-
-        // Atur link download
-        downloadLink.href = imageUrl;
-        downloadLink.download = "hasil_smoothing.jpg";
-        downloadLink.style.display = "inline-block";
-      } catch (error) {
-        alert("Terjadi kesalahan saat memproses gambar.");
-        console.error(error);
-      } finally {
-        processButton.textContent = "Proses Gambar";
-        processButton.disabled = false;
-      }
-    });
+    const slider = document.getElementById("smoothing");
+    const output = document.getElementById("smoothValue");
+    slider.oninput = () => output.textContent = slider.value;
   </script>
 </body>
 </html>
