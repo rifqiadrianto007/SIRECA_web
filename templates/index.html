@@ -1,38 +1,148 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SIRECA</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f6f7fb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      width: 400px;
+      text-align: center;
+    }
+
+    input[type="file"] {
+      margin: 10px 0;
+    }
+
+    .slider-container {
+      margin: 15px 0;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    button {
+      background-color: #0078ff;
+      color: white;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background-color: #005fcc;
+    }
+
+    img {
+      margin-top: 15px;
+      max-width: 100%;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+    }
+
+    #downloadLink {
+      display: none;
+      margin-top: 10px;
+      text-decoration: none;
+      background: #00b341;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 8px;
+    }
+
+    #downloadLink:hover {
+      background: #009c38;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md text-center">
-    <h1 class="text-2xl font-bold text-gray-800 mb-6">SIRECA – Sistem Restorasi Citra untuk Penghalusan dan Penghapusan Latar Belakang Berbasis Web</h1>
-    
-    <form action="/process" method="post" enctype="multipart/form-data" class="space-y-6">
-      <div>
-        <label class="block text-gray-700 mb-2">Pilih Gambar</label>
-        <input type="file" name="image" accept="image/*" required
-          class="w-full border border-gray-300 rounded-lg p-2">
-      </div>
+<body>
 
-      <div>
-        <label class="block text-gray-700 mb-2">Tingkat Kehalusan : <span id="levelVal" class="font-semibold text-indigo-600">10</span></label>
-        <input type="range" name="level" min="1" max="20" value="10" id="level"
-          class="w-full accent-indigo-600">
-      </div>
+  <h1>SIRECA – Sistem Restorasi Citra untuk Penghalusan dan Penghapusan Latar Belakang Berbasis Web</h1>
+  <div class="card">
+    <input type="file" id="fileInput" accept="image/*"><br>
 
-      <button type="submit"
-        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg w-full transition">
-        Proses Gambar
-      </button>
-    </form>
+    <div class="slider-container">
+      <label for="intensity">Tingkat Kehalusan :</label><br>
+      <input type="range" id="intensity" min="1" max="20" value="5" oninput="updateLabel(this.value)">
+      <span id="intensityValue">5</span>
+    </div>
+
+    <button id="processButton">Proses Gambar</button>
+    <a id="downloadLink">Download Hasil</a>
+    <img id="outputImage" alt="Hasil smoothing akan muncul di sini" />
   </div>
 
   <script>
-    const slider = document.getElementById("level");
-    const output = document.getElementById("levelVal");
-    slider.oninput = () => output.textContent = slider.value;
+    const processButton = document.getElementById("processButton");
+    const fileInput = document.getElementById("fileInput");
+    const outputImage = document.getElementById("outputImage");
+    const downloadLink = document.getElementById("downloadLink");
+    const intensitySlider = document.getElementById("intensity");
+    const intensityValue = document.getElementById("intensityValue");
+
+    function updateLabel(value) {
+      intensityValue.textContent = value;
+    }
+
+    processButton.addEventListener("click", async () => {
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Pilih gambar terlebih dahulu!");
+        return;
+      }
+
+      const intensity = intensitySlider.value;
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("intensity", intensity);
+
+      processButton.textContent = "Memproses...";
+      processButton.disabled = true;
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/smooth", {
+          method: "POST",
+          body: formData,
+        });
+        const blob = await response.blob();
+        const imageUrl = URL.createObjectURL(blob);
+
+        outputImage.src = imageUrl;
+
+        // Atur link download
+        downloadLink.href = imageUrl;
+        downloadLink.download = "hasil_smoothing.jpg";
+        downloadLink.style.display = "inline-block";
+      } catch (error) {
+        alert("Terjadi kesalahan saat memproses gambar.");
+        console.error(error);
+      } finally {
+        processButton.textContent = "Proses Gambar";
+        processButton.disabled = false;
+      }
+    });
   </script>
 </body>
 </html>

@@ -1,70 +1,40 @@
-from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.responses import HTMLResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-import torch
-import cv2
+from fastapi import FastAPI, UploadFile, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 import numpy as np
-from torchvision import transforms
-import os
-from model.model import SmoothCNN
+import cv2
 
 app = FastAPI()
 
-# Konfigurasi folder
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# Mengizinkan akses dari browser lokal
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = SmoothCNN().to(device)
-model.load_state_dict(torch.load("checkpoints/smoothcnn.pth", map_location=device))
-model.eval()
 
-UPLOAD_DIR = "static/uploads"
-RESULT_DIR = "static/results"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(RESULT_DIR, exist_ok=True)
+@app.post("/smooth")
+async def smooth_image(file: UploadFile, intensity: int = Form(5)):
+    """
+    Endpoint smoothing gambar dengan Gaussian blur
+    tanpa menyimpan file ke sistem.
+    """
+    # Baca gambar sebagai array numpy
+    contents = await file.read()
+    npimg = np.frombuffer(contents, np.uint8)
+    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
 
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    # Tentukan ukuran kernel berdasarkan slider (1–20)
+    ksize = max(1, int(intensity))
+    if ksize % 2 == 0:  # kernel harus ganjil
+        ksize += 1
 
-@app.post("/process", response_class=HTMLResponse)
-async def process_image(
-    request: Request,
-    image: UploadFile = File(...),
-    level: int = Form(...)
-):
-    # Simpan gambar upload
-    image_path = os.path.join(UPLOAD_DIR, image.filename)
-    with open(image_path, "wb") as f:
-        f.write(await image.read())
+    # Proses smoothing dengan Gaussian Blur
+    smoothed = cv2.GaussianBlur(img, (ksize, ksize), 0)
 
-    # Baca gambar
-    img = cv2.imread(image_path)
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img_t = transforms.ToTensor()(img_rgb).unsqueeze(0).to(device)
-
-    # Proses smoothing
-    with torch.no_grad():
-        output = model(img_t).clamp(0, 1)
-    result = (output[0].permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
-    result_bgr = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
-
-    # Simpan hasil
-    result_filename = f"result_{level}_{image.filename}"
-    result_path = os.path.join(RESULT_DIR, result_filename)
-    cv2.imwrite(result_path, result_bgr)
-
-    return templates.TemplateResponse("result.html", {
-        "request": request,
-        "before_path": f"/{image_path}",
-        "after_path": f"/{result_path}",
-        "download_path": f"/download/{result_filename}",
-        "level": level
-    })
-
-@app.get("/download/{filename}")
-async def download_image(filename: str):
-    path = os.path.join(RESULT_DIR, filename)
-    return FileResponse(path, filename=filename)
+    # Encode hasil ke format JPEG (tanpa menyimpan file)
+    _, encoded_img = cv2.imencode(".jpg", smoothed)
+    return Response(content=encoded_img.tobytes(), media_type="image/jpeg")

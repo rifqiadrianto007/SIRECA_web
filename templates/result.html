@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% comment %} <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 </head>
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-6">
   <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-4xl">
-    <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">✨ Hasil Smoothing (Level {{ level }})</h2>
+    <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">Hasil Smoothing (Level {{ level }})</h2>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="text-center">
@@ -21,9 +21,9 @@
     </div>
 
     <div class="mt-8 flex justify-center space-x-4">
-      <a href="/" class="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded-lg font-medium transition">🔙 Kembali</a>
-      <a href="{{ download_path }}" download class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition">⬇️ Download Hasil</a>
+      <a href="/" class="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded-lg font-medium transition">Kembali</a>
+      <a href="{{ download_path }}" download class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition">Download Hasil</a>
     </div>
   </div>
 </body>
-</html>
+</html> {% endcomment %}
